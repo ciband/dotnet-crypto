@@ -45,7 +45,7 @@ namespace ArkEcosystem.Crypto.Tests.Configuration
             var fixture = TestHelper.ReadTransactionFixture("transfer", "passphrase");
             var serializedTransaction = fixture["serialized"];
             
-            var transaction = Crypto..Transactions.Transaction.Deserialize(serializedTransaction);
+            var transaction = Crypto.Transactions.Transaction.Deserialize(serializedTransaction);
             Assert.AreEqual(0, transaction.Type);
             Assert.AreEqual(200000000, transaction.Amount);
             Assert.AreEqual(10000000, transaction.Fee);
