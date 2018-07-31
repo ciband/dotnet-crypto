@@ -83,7 +83,7 @@ namespace ArkEcosystem.Crypto.Tests.Configuration
         [TestMethod]
         public void ToJson()
         {
-            var expectedJson = "{
+            var expectedJson = @"{
               "type": 0,
               "amount": 200000000,
               "fee": 10000000,
