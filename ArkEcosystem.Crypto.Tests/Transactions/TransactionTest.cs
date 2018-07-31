@@ -22,6 +22,7 @@
 // THE SOFTWARE.
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NBitcoin.DataEncoders;
 using System;
 
 namespace ArkEcosystem.Crypto.Tests.Configuration
@@ -33,10 +34,10 @@ namespace ArkEcosystem.Crypto.Tests.Configuration
         public void Serialize()
         {
             var fixture = TestHelper.ReadTransactionFixture("transfer", "passphrase");
-            var transaction = fixture["data"];
-            
+            var transaction = new Crypto.Transactions.Deserializer(fixture["serialized"]).Deserialize();
+
             var serializedTransaction = transaction.Serialize();
-            Assert.AreEqual(fixture["serialized"], serializedTransaction);
+            Assert.AreEqual(fixture["serialized"], Encoders.Hex.EncodeData(serializedTransaction));
         }
         
         [TestMethod]
@@ -47,10 +48,10 @@ namespace ArkEcosystem.Crypto.Tests.Configuration
             
             var transaction = Crypto.Transactions.Transaction.Deserialize(serializedTransaction);
             Assert.AreEqual(0, transaction.Type);
-            Assert.AreEqual(200000000, transaction.Amount);
-            Assert.AreEqual(10000000, transaction.Fee);
+            Assert.AreEqual(200000000ul, transaction.Amount);
+            Assert.AreEqual(10000000ul, transaction.Fee);
             Assert.AreEqual("D61mfSggzbvQgTUe6JhYKH2doHaqJ3Dyib", transaction.RecipientId);
-            Assert.AreEqual(41268326, transaction.Timestamp);
+            Assert.AreEqual(41268326u, transaction.Timestamp);
             Assert.AreEqual("034151a3ec46b5670a682b0a63394f863587d1bc97483b1b6c70eb58e7f0aed192", transaction.SenderPublicKey);
             Assert.AreEqual("3044022002994b30e08b58825c8c16ebf2cc693cfe706fb26571674784ead098accc89d702205b79dedc752a84504ecfe4b9e1292997f22260ee4daa102d2d9a61432d93b286", transaction.Signature);
             Assert.AreEqual("da61c6cba363cc39baa0ca3f9ba2c5db81b9805045bd0b9fc58af07ad4206856", transaction.Id);
@@ -60,7 +61,7 @@ namespace ArkEcosystem.Crypto.Tests.Configuration
         public void ToDictionary()
         {
             var fixture = TestHelper.ReadTransactionFixture("transfer", "passphrase");
-            var transaction = fixture["data"];
+            var transaction = new Crypto.Transactions.Deserializer(fixture["serialized"]).Deserialize();
             var dictionary = transaction.ToDictionary();
             
             Assert.AreEqual(dictionary["amount"], transaction.Amount);
@@ -83,10 +84,10 @@ namespace ArkEcosystem.Crypto.Tests.Configuration
         [TestMethod]
         public void ToJson()
         {
-            var expectedJson = "{\n\"type\": 0,\n\"amount\": 200000000,\n\"fee\": 10000000,\n\"recipientId\": \"D61mfSggzbvQgTUe6JhYKH2doHaqJ3Dyib\",\n\"timestamp\": 41268326,\n\"asset\": {},\n\"senderPublicKey\": \"034151a3ec46b5670a682b0a63394f863587d1bc97483b1b6c70eb58e7f0aed192\",\n\"signature\": \"3044022002994b30e08b58825c8c16ebf2cc693cfe706fb26571674784ead098accc89d702205b79dedc752a84504ecfe4b9e1292997f22260ee4daa102d2d9a61432d93b286\",\n\"id\": \"da61c6cba363cc39baa0ca3f9ba2c5db81b9805045bd0b9fc58af07ad4206856\"\n}";
+            var expectedJson = "{\"amount\":200000000,\"asset\":{},\"fee\":10000000,\"id\":\"da61c6cba363cc39baa0ca3f9ba2c5db81b9805045bd0b9fc58af07ad4206856\",\"network\":30,\"recipientId\":\"D61mfSggzbvQgTUe6JhYKH2doHaqJ3Dyib\",\"secondSignature\":null,\"senderPublicKey\":\"034151a3ec46b5670a682b0a63394f863587d1bc97483b1b6c70eb58e7f0aed192\",\"signature\":\"3044022002994b30e08b58825c8c16ebf2cc693cfe706fb26571674784ead098accc89d702205b79dedc752a84504ecfe4b9e1292997f22260ee4daa102d2d9a61432d93b286\",\"signatures\":null,\"signSignature\":null,\"timestamp\":41268326,\"type\":0,\"vendorField\":null,\"version\":1}";
             
             var fixture = TestHelper.ReadTransactionFixture("transfer", "passphrase");
-            var transaction = fixture["data"];
+            var transaction = new Crypto.Transactions.Deserializer(fixture["serialized"]).Deserialize();
             var json = transaction.ToJson();
             
             Assert.AreEqual(expectedJson, json);
