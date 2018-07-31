@@ -63,21 +63,21 @@ namespace ArkEcosystem.Crypto.Tests.Configuration
             var transaction = fixture["data"];
             var dictionary = transaction.ToDictionary();
             
-            dictionary["amount"] = transaction.Amount,
-            dictionary["asset"] = transaction.Asset,
-            dictionary["fee"] = transaction.Fee,
-            dictionary["id"] = transaction.Id,
-            dictionary["network"] = transaction.Network,
-            dictionary["recipientId"] = transaction.RecipientId,
-            dictionary["secondSignature"] = transaction.SecondSignature,
-            dictionary["senderPublicKey"] = transaction.SenderPublicKey,
-            dictionary["signature"] = transaction.Signature,
-            dictionary["signatures"] = transaction.Signatures,
-            dictionary["signSignature"] = transaction.SignSignature,
-            dictionary["timestamp"] = transaction.Timestamp,
-            dictionary["type"] = transaction.Type,
-            dictionary["vendorField"] = transaction.VendorField,
-            dictionary["version"] = transaction.Version,
+            Assert.AreEqual(dictionary["amount"], transaction.Amount);
+            Assert.AreEqual(dictionary["asset"], transaction.Asset);
+            Assert.AreEqual(dictionary["fee"], transaction.Fee);
+            Assert.AreEqual(dictionary["id"], transaction.Id);
+            Assert.AreEqual(dictionary["network"], transaction.Network);
+            Assert.AreEqual(dictionary["recipientId"], transaction.RecipientId);
+            Assert.AreEqual(dictionary["secondSignature"], transaction.SecondSignature);
+            Assert.AreEqual(dictionary["senderPublicKey"], transaction.SenderPublicKey);
+            Assert.AreEqual(dictionary["signature"], transaction.Signature);
+            Assert.AreEqual(dictionary["signatures"], transaction.Signatures);
+            Assert.AreEqual(dictionary["signSignature"], transaction.SignSignature);
+            Assert.AreEqual(dictionary["timestamp"], transaction.Timestamp);
+            Assert.AreEqual(dictionary["type"], transaction.Type);
+            Assert.AreEqual(dictionary["vendorField"], transaction.VendorField);
+            Assert.AreEqual(dictionary["version"], transaction.Version);
         }
         
         [TestMethod]
