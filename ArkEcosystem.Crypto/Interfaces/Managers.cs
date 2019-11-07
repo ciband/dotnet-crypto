@@ -1,7 +1,4 @@
-// Author:
-//       Brian Faust <brian@ark.io>
-//
-// Copyright (c) 2018 Ark Ecosystem <info@ark.io>
+// Copyright (c) 2019 Ark Ecosystem <info@ark.io>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,24 +19,9 @@
 // THE SOFTWARE.
 
 using System;
+using System.Collections.Generic;
 
-namespace ArkEcosystem.Crypto
-{
-    public class Mainnet : INetwork
-    {
-        public byte GetVersion()
-        {
-            return 0x17;
-        }
-
-        public DateTime GetEpoch()
-        {
-            return new DateTime(2017, 3, 21, 13, 00, 0, DateTimeKind.Utc);
-        }
-
-        public byte GetWIF()
-        {
-            return 170;
-        }
-    }
+public interface IMilestone {
+    UInt32 Index { get; set; }
+    KeyValuePair<string, dynamic> Data { get; set; }
 }

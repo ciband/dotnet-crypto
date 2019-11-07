@@ -25,6 +25,7 @@ using NBitcoin.DataEncoders;
 using NBitcoin;
 using SshNet.Security.Cryptography;
 using System.IO;
+using ArkEcosystem.Crypto.Managers;
 
 namespace ArkEcosystem.Crypto.Identities
 {
@@ -32,48 +33,54 @@ namespace ArkEcosystem.Crypto.Identities
     {
         static readonly RIPEMD160 Ripemd160 = new RIPEMD160();
 
-        public static string FromPassphrase(string passphrase, byte publicKeyHash = 0)
+        public static string FromPassphrase(string passphrase, byte networkVersion = 0)
         {
-            return FromPrivateKey(PrivateKey.FromPassphrase(passphrase), publicKeyHash);
         }
 
-        public static string FromPublicKey(PubKey publicKey, byte publicKeyHash = 0)
+        public static string FromPublicKey(string publicKey, byte networkVersion = 0)
         {
-            MemoryStream stream = new MemoryStream();
+        }
 
-            using (BinaryWriter writer = new BinaryWriter(stream))
-            {
-                var bytes = publicKey.ToBytes();
+        public static string FromWIF(string wif, byte networkVersion = 0) {
 
-                if (publicKeyHash != 0)
-                {
-                    writer.Write(publicKeyHash);
-                } else {
-                    writer.Write(Configuration.Network.Get().GetVersion());
-                }
+        }
 
-                writer.Write(Ripemd160.ComputeHash(bytes, 0, bytes.Length));
+        public static string FromMultiSignatureAsset(IMultiSignatureAsset asset, byte networkVersion = 0) {
 
-                return Encoders.Base58Check.EncodeData(stream.ToArray());
+        }
+
+        public static string FromPrivateKey(Key privateKey, byte networkVersion = 0)
+        {
+
+        }
+
+        public static string FromBuffer(byte[] buffer) {
+            return Base58.EncodeCheck(buffer);
+        }
+
+        public static (byte[] addressBuffer, string addressError) ToBuffer(string address) {
+            var buffer = Base58.DecodeCheck(address);
+            var networkVersion = ConfigManager.Get<byte>("network.pubKeyHash");
+            var addressBuffer = buffer;
+            string addressError = null;
+
+            if (buffer[0] != networkVersion) {
+                addressError = $"Expected address network byte {networkVersion}, but got {buffer[0]}.";
             }
+
+            return (addressBuffer, addressError);
         }
 
-        public static string FromPrivateKey(Key privateKey, byte publicKeyHash = 0)
+        public static bool Validate(string address, byte networkVersion = 0)
         {
-            return FromPublicKey(privateKey.PubKey, publicKeyHash);
-        }
-
-        public static bool Validate(string address, byte publicKeyHash = 0)
-        {
-            var addressPrefix = Encoders.Base58Check.DecodeData(address)[0];
-
-            if (publicKeyHash != 0)
-            {
-                return addressPrefix == publicKeyHash;
+            if (networkVersion == 0) {
+                networkVersion = ConfigManager.Get<byte>("network.pubKeyHash");
             }
-            else
-            {
-                return addressPrefix == Configuration.Network.Get().GetVersion();
+
+            try {
+                return Base58.DecodeCheck(address)[0] == networkVersion;
+            } catch {
+                return false;
             }
         }
     }

@@ -21,46 +21,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using NBitcoin.DataEncoders;
-using System.Text;
-using System.IO;
-using System.Security.Cryptography;
-using ArkEcosystem.Crypto.Managers;
 using System;
 
-namespace ArkEcosystem.Crypto.Identities
+namespace ArkEcosystem.Crypto.Enums
 {
-    public static class WIF
+    public static class TransactionTypes
     {
-        public static string FromPassphrase(string passphrase, INetwork network)
-        {
-            var keys = Keys.FromPassphrase(passphrase);
+        public const byte TRANSFER = 0;
+        public const byte SECOND_SIGNATURE = 1;
+        public const byte DELEGATE_REGISTRATION = 2;
+        public const byte VOTE = 3;
+        public const byte MULTI_SIGNATURE = 4;
+        public const byte IPFS = 5;
+        public const byte MULTI_PAYMENT = 6;
+        public const byte DELEGATE_RESIGNATION = 7;
+        public const byte HTLC_LOCK = 8;
+        public const byte HTLC_CLAIM = 9;
+        public const byte HTLC_REFUND = 10;
+    }
 
-            return FromKeys(keys, network);
-        }
+    public static class TransactionTypeGroup {
+        public const UInt16 TEST = 0;
+        public const UInt16 CORE = 1;
 
-        public static string FromKeys(IKeyPair keys, INetwork network) {
-            if (network == null) {
-                network = ConfigManager.Get<INetwork>("network");
-            }
+        // Everything above is available to anyone
+        public const UInt16 RESERVED = 1000;
+    }
 
-            return wif_encode((byte)network.Wif, Encoders.Hex.DecodeData(keys.PrivateKey), keys.Compressed);
-        }
-
-        private static string wif_encode(byte version, byte[] privateKey, bool compressed) {
-            if (privateKey.Length != 32) {
-                throw new Exception("Invalid privateKey length");
-            }
-
-            var buffer = new byte[compressed ? 34 : 33];
-            buffer[0] = version;
-            privateKey.CopyTo(buffer, 1);
-
-            if (compressed) {
-                buffer[33] = 0x01;
-            }
-
-            return Base58.EncodeCheck(buffer);
-        }
+    public static class HtlcLockExpirationType {
+        public const byte EPOCH_TIMESTAMP = 1;
+        public const byte BLOCK_HEIGHT = 2;
     }
 }

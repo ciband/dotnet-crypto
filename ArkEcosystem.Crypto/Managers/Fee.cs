@@ -21,46 +21,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using NBitcoin.DataEncoders;
-using System.Text;
-using System.IO;
-using System.Security.Cryptography;
-using ArkEcosystem.Crypto.Managers;
 using System;
+using System.Collections.Generic;
+using ArkEcosystem.Crypto.Enums;
 
-namespace ArkEcosystem.Crypto.Identities
+namespace ArkEcosystem.Crypto.Managers
 {
-    public static class WIF
+    public static class FeeManager
     {
-        public static string FromPassphrase(string passphrase, INetwork network)
+        public static Dictionary<UInt16, UInt64> fees = new Dictionary<UInt16, UInt64>();
+
+        public static UInt64 Get(UInt16 type)
         {
-            var keys = Keys.FromPassphrase(passphrase);
-
-            return FromKeys(keys, network);
+            return fees[type];
         }
 
-        public static string FromKeys(IKeyPair keys, INetwork network) {
-            if (network == null) {
-                network = ConfigManager.Get<INetwork>("network");
-            }
-
-            return wif_encode((byte)network.Wif, Encoders.Hex.DecodeData(keys.PrivateKey), keys.Compressed);
+        public static void Set(UInt16 type, UInt64 value)
+        {
+            fees[type] = value;
         }
 
-        private static string wif_encode(byte version, byte[] privateKey, bool compressed) {
-            if (privateKey.Length != 32) {
-                throw new Exception("Invalid privateKey length");
+        public static UInt64 GetForTransaction(ITransactionData transaction) {
+            var fee = fees[transaction.Type];
+
+            if (transaction.Type == TransactionTypes.MULTI_SIGNATURE) {
+                if (transaction.Version == 2) {
+                    return fee * (ulong)(transaction.Asset.MultiSignature.PublicKeys.Count + 1);
+                }
+                return fee * (ulong)(transaction.Asset.MultiSignatureLegacy.Keysgroup.Count + 1);
             }
-
-            var buffer = new byte[compressed ? 34 : 33];
-            buffer[0] = version;
-            privateKey.CopyTo(buffer, 1);
-
-            if (compressed) {
-                buffer[33] = 0x01;
-            }
-
-            return Base58.EncodeCheck(buffer);
+            return fee;
         }
     }
 }

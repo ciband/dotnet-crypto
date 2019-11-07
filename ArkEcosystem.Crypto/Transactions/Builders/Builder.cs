@@ -21,29 +21,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using ArkEcosystem.Crypto.Configuration;
-
 namespace ArkEcosystem.Crypto.Transactions.Builder
 {
-    public static class MultiSignatureRegistration
+    public static class Builder
     {
-        public static Transaction Create(int min, int lifetime, List<string> keysgroup, string passphrase, string secondPassphrase)
+        public static Transaction Sign(Transaction transaction, string passphrase, string secondPassphrase = null)
         {
-            var transaction = new Transaction
+            transaction.Timestamp = Slot.GetTime();
+
+            transaction.Signature = transaction.Sign(passphrase);
+
+            if (secondPassphrase != null)
             {
-                Type = Enums.TransactionTypes.MULTI_SIGNATURE_REGISTRATION
-            };
+                transaction.SignSignature = transaction.SecondSign(secondPassphrase);
+            }
 
-            transaction.Asset.Add("multisignature", new Dictionary<string, dynamic>());
-            transaction.Asset["multisignature"].Add("min", min);
-            transaction.Asset["multisignature"].Add("lifetime", lifetime);
-            transaction.Asset["multisignature"].Add("keysgroup", keysgroup);
+            transaction.Id = transaction.GetId();
 
-            transaction.Fee = Convert.ToUInt64(keysgroup.Count + 1) * Fee.Get(Enums.TransactionTypes.MULTI_SIGNATURE_REGISTRATION);
+            return transaction;
+        }
 
-            return Builder.Sign(transaction, passphrase, secondPassphrase);
+        public static Transaction MultiSign(Transaction transaction, string passphrase, int index) {
+            transaction.Timestamp = Slot.GetTime();
+            transaction.MultiSign(passphrase, index);
+            transaction.Id = transaction.GetId();
+            return transaction;
         }
     }
 }

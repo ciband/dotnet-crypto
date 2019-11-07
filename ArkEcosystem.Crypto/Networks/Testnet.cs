@@ -23,7 +23,7 @@
 
 using System;
 
-namespace ArkEcosystem.Crypto.Networks
+namespace ArkEcosystem.Crypto
 {
     public class Testnet : INetwork
     {

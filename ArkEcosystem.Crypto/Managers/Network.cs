@@ -21,46 +21,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using NBitcoin.DataEncoders;
-using System.Text;
-using System.IO;
-using System.Security.Cryptography;
-using ArkEcosystem.Crypto.Managers;
-using System;
+using System.Collections.Generic;
 
-namespace ArkEcosystem.Crypto.Identities
+namespace ArkEcosystem.Crypto.Managers
 {
-    public static class WIF
+    public static class NetworkManager
     {
-        public static string FromPassphrase(string passphrase, INetwork network)
+        public static Dictionary<string, INetworkConfig> All() {
+            return Networks.All;
+        }
+
+        public static INetworkConfig FindByName(string networkName)
         {
-            var keys = Keys.FromPassphrase(passphrase);
-
-            return FromKeys(keys, network);
-        }
-
-        public static string FromKeys(IKeyPair keys, INetwork network) {
-            if (network == null) {
-                network = ConfigManager.Get<INetwork>("network");
-            }
-
-            return wif_encode((byte)network.Wif, Encoders.Hex.DecodeData(keys.PrivateKey), keys.Compressed);
-        }
-
-        private static string wif_encode(byte version, byte[] privateKey, bool compressed) {
-            if (privateKey.Length != 32) {
-                throw new Exception("Invalid privateKey length");
-            }
-
-            var buffer = new byte[compressed ? 34 : 33];
-            buffer[0] = version;
-            privateKey.CopyTo(buffer, 1);
-
-            if (compressed) {
-                buffer[33] = 0x01;
-            }
-
-            return Base58.EncodeCheck(buffer);
+            return Networks.GetNetwork(networkName);
         }
     }
 }

@@ -1,7 +1,4 @@
-// Author:
-//       Brian Faust <brian@ark.io>
-//
-// Copyright (c) 2018 Ark Ecosystem <info@ark.io>
+// Copyright (c) 2019 Ark Ecosystem <info@ark.io>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,25 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System;
+using NBitcoin;
+using NBitcoin.Crypto;
+using NBitcoin.DataEncoders;
 
-namespace ArkEcosystem.Crypto
-{
-    public class Mainnet : INetwork
-    {
-        public byte GetVersion()
-        {
-            return 0x17;
-        }
+namespace ArkEcosystem.Crypto {
 
-        public DateTime GetEpoch()
-        {
-            return new DateTime(2017, 3, 21, 13, 00, 0, DateTimeKind.Utc);
-        }
-
-        public byte GetWIF()
-        {
-            return 170;
-        }
+public static class Hash {
+    public static string SignECDSA(byte[] hash, Key key) {
+        return Hash.SignECDSA(hash, key);
     }
+
+    public static bool VerifyECDSA(byte[] hash, byte[] signature, byte[] publicKey) {
+        return Hash.VerifyECDSA(hash, signature, publicKey);
+    }
+
+    public static string SignSchnorr(byte[] hash, Key key) {
+        var schnorr = new SchnorrSigner();
+        var sig = schnorr.Sign(new uint256(hash), key);
+        return sig.ToString();
+    }
+
+    public static bool VerifySchnorr(byte[] hash, byte[] signature, byte[] publicKey) {
+        return Hash.VerifySchnorr(hash, signature, publicKey);
+    }
+}
+
 }

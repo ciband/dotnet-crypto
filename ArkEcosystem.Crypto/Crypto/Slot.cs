@@ -22,19 +22,49 @@
 // THE SOFTWARE.
 
 using System;
+using ArkEcosystem.Crypto.Managers;
 
 namespace ArkEcosystem.Crypto
 {
     public static class Slot
     {
-        public static uint GetTime()
+        public static UInt32 GetTime()
         {
-            return Convert.ToUInt32((DateTime.UtcNow - GetEpoch()).TotalMilliseconds / 1000);
+            var epoch = ConfigManager.GetMilestone(1).Value.epoch;
+            return Convert.ToUInt32((DateTime.UtcNow - epoch).TotalMilliseconds / 1000);
         }
 
-        public static DateTime GetEpoch()
-        {
-            return Configuration.Network.Get().GetEpoch();
+        public static UInt32 GetTimeInMsUntilNextSlot() {
+            var nextSlotTime = GetSlotTime(GetNextSlot());
+            var now = GetTime();
+
+            return (nextSlotTime - now) * 1000;
+        }
+
+        public static UInt32 GetSlotNumber(UInt32? epoch = null) {
+            if (epoch == null) {
+                epoch = GetTime();
+            }
+
+            return Math.Floor(epoch / ConfigManager.GetMilestone(1).Value.blocktime);
+        }
+
+        public static UInt32 GetSlotTime(UInt32 slot) {
+            return slot * ConfigManager.GetMilestone(1).Value.blocktime;
+        }
+
+        public static UInt32 GetNextSlot() {
+            return GetSlotNumber() + 1;
+        }
+
+        public static bool IsForgingAllowed(UInt32? epoch = null) {
+            if (epoch == null) {
+                epoch = GetTime();
+            }
+
+            var blockTime = ConfigManager.GetMilestone(1).Value.blocktime;
+
+            return epoch % blockTime < blockTime / 2;
         }
     }
 }

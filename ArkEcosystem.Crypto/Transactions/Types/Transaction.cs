@@ -28,33 +28,41 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using ArkEcosystem.Crypto.Managers;
 
 namespace ArkEcosystem.Crypto.Transactions
 {
-    public class Transaction
+    public class Transaction : ITransaction
     {
         static readonly System.Security.Cryptography.SHA256 Sha256 = System.Security.Cryptography.SHA256.Create();
 
-        public byte Header { get; set; }
-        public byte Network { get; set; }
-        public byte Type { get; set; }
-        public byte Version { get; set; }
-        public Dictionary<string, dynamic> Asset = new Dictionary<string, dynamic>();
-        public int TimelockType { get; set; }
-        public List<string> Signatures { get; set; }
-        public string Id { get; set; }
-        public string RecipientId { get; set; }
-        public string SecondSignature { get; set; }
-        public string SenderPublicKey { get; set; }
-        public string Signature { get; set; }
-        public string SignSignature { get; set; }
-        public string VendorField { get; set; }
-        public string VendorFieldHex { get; set; }
-        public uint Expiration { get; set; }
-        public uint Timestamp { get; set; }
-        public ulong Amount { get; set; }
-        public ulong Fee { get; set; }
-        public ulong Timelock { get; set; }
+
+        public string Id { get; private set; }
+        public UInt32 TypeGroup { get; private set; }
+        public UInt16 Type { get; private set; }
+        public bool Verified { get { return IsVerified; } }
+        public string Key { get; private set; }
+        public UInt64 StaticFee {
+            get {
+                var milestones = ConfigManager.
+            }
+        }
+
+        public Boolean IsVerified { get; set; }
+
+        public ITransactionData Data { get; set; }
+        public byte[] Serialized { get; set; }
+        public UInt32 Timestamp { get; set; }
+
+        public byte[] Serialize(ISerializeOption? options);
+        public void Deserialize(byte[] buffer);
+
+        public bool Verify();
+        public ISchemaValidationResult VerifySchema(bool? strict);
+
+        public ITransactionJson ToJson();
+
+        public bool HasVendorField();
 
         public string GetId()
         {
@@ -81,11 +89,34 @@ namespace ArkEcosystem.Crypto.Transactions
             return Encoders.Hex.EncodeData(signature.ToDER());
         }
 
+        public string MultiSign(string passphrase, int index = -1)
+        {
+            if (Signatures == null) {
+                Signatures = new List<string>();
+            }
+            index = index == -1 ? Signatures.Count : index;
+
+            var schnorrSigner = new NBitcoin.Crypto.SchnorrSigner();
+            var hash = new uint256(Sha256.ComputeHash(ToBytes(false)));
+            var signature = Encoders.Hex.EncodeData(schnorrSigner.Sign(hash, Identities.PrivateKey.FromPassphrase(passphrase)).ToBytes());
+            var indexedSignature = index.ToString("%X") + signature;
+            Signatures.Add(indexedSignature);
+            return indexedSignature;
+        }
+
         public bool Verify()
         {
             var signature = Encoders.Hex.DecodeData(Signature);
             var transactionBytes = ToBytes();
 
+            if (Version == 2) {
+                var signer = new NBitcoin.Crypto.SchnorrSigner();
+                signer.Verify(
+                    new uint256(Sha256.ComputeHash(transactionBytes)),
+                    Identities.PublicKey.FromHex(SenderPublicKey),
+                    new NBitcoin.Crypto.SchnorrSignature(signature)
+                );
+            }
             return Identities.PublicKey
                 .FromHex(SenderPublicKey)
                 .Verify(new uint256(Sha256.ComputeHash(transactionBytes)), signature);
@@ -204,7 +235,7 @@ namespace ArkEcosystem.Crypto.Transactions
                         if (vendorFieldBytes.Length < 64)
                         {
                             writer.Write(new byte[64 - vendorFieldBytes.Length]);
-                        }   
+                        }
                     }
                 }
                 else
@@ -233,7 +264,6 @@ namespace ArkEcosystem.Crypto.Transactions
                 if (Type == Enums.TransactionTypes.MULTI_SIGNATURE_REGISTRATION)
                 {
                     writer.Write((byte)Asset["multisignature"]["min"]);
-                    writer.Write((byte)Asset["multisignature"]["lifetime"]);
                     writer.Write(Encoding.ASCII.GetBytes(string.Join("", Asset["multisignature"]["keysgroup"])));
                 }
 

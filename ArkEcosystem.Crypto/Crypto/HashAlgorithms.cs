@@ -1,7 +1,4 @@
-// Author:
-//       Brian Faust <brian@ark.io>
-//
-// Copyright (c) 2018 Ark Ecosystem <info@ark.io>
+// Copyright (c) 2019 Ark Ecosystem <info@ark.io>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +18,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-namespace ArkEcosystem.Crypto.Transactions.Builder
-{
-    public static class Builder
-    {
-        public static Transaction Sign(Transaction transaction, string passphrase, string secondPassphrase = null)
-        {
-            transaction.Timestamp = Slot.GetTime();
+using NBitcoin;
+using NBitcoin.Crypto;
+using NBitcoin.DataEncoders;
 
-            transaction.Signature = transaction.Sign(passphrase);
+namespace ArkEcosystem.Crypto {
 
-            if (secondPassphrase != null)
-            {
-                transaction.SignSignature = transaction.SecondSign(secondPassphrase);
-            }
-
-            transaction.Id = transaction.GetId();
-
-            return transaction;
-        }
+public static class HashAlgorithms {
+    public static byte[] Ripemd160(byte[] buffer) {
+        return Hashes.RIPEMD160(buffer, buffer.Length);
     }
+
+    public static byte[] Sha1(byte[] buffer) {
+        return Hashes.SHA256(buffer);
+    }
+
+    public static byte[] Sha256(byte[] buffer) {
+        return Hashes.SHA256(buffer);
+    }
+
+    public static byte[] Hash160(byte[] buffer) {
+        return Hashes.Hash160(buffer).ToBytes();
+    }
+
+    public static byte[] Hash256(byte[] buffer) {
+        return Hashes.Hash256(buffer).ToBytes();
+    }
+
+    public static byte[] Hash256(string buffer) {
+        return Hashes.Hash256(Encoders.Hex.DecodeData(buffer)).ToBytes();
+    }
+}
+
 }

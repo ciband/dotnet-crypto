@@ -1,6 +1,3 @@
-// Author:
-//       Brian Faust <brian@ark.io>
-//
 // Copyright (c) 2018 Ark Ecosystem <info@ark.io>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,33 +19,12 @@
 // THE SOFTWARE.
 
 using System;
-using System.Collections.Generic;
-using ArkEcosystem.Crypto.Enums;
 
-namespace ArkEcosystem.Crypto.Configuration
-{
-    public static class Fee
-    {
-        public static List<UInt64> fees = new List<UInt64>{
-            TransactionFees.TRANSFER,
-            TransactionFees.SECOND_SIGNATURE_REGISTRATION,
-            TransactionFees.DELEGATE_REGISTRATION,
-            TransactionFees.VOTE,
-            TransactionFees.MULTI_SIGNATURE_REGISTRATION,
-            TransactionFees.IPFS,
-            TransactionFees.TIMELOCK_TRANSFER,
-            TransactionFees.MULTI_PAYMENT,
-            TransactionFees.DELEGATE_RESIGNATION,
-        };
+namespace ArkEcosystem.Crypto {
 
-        public static UInt64 Get(int type)
-        {
-            return fees[type];
-        }
+public static class Constants {
+    public const UInt64 SATOSHI = (UInt64)1e8;
+    public const UInt64 ARKTOSHI = SATOSHI;
+}
 
-        public static void Set(int type, UInt64 value)
-        {
-            fees[type] = value;
-        }
-    }
 }

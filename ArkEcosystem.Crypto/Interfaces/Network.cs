@@ -22,10 +22,34 @@
 // THE SOFTWARE.
 
 using System;
+using System.Collections.Generic;
+
+public interface INetworkConfig {
+    IExceptions Exceptions { get; set; }
+    IBlockJson GenesisBlock { get; set; }
+    Dictionary<string, dynamic> Milestones{ get; set; }
+    INetwork Network { get; set; }
+}
 
 public interface INetwork
 {
-    byte GetVersion();
-    DateTime GetEpoch();
-    byte GetWIF();
+    string Name { get; set; }
+    string MessagePrefix { get; set; }
+    UInt64 Bip32Public { get; set; }
+    UInt64 Bip32Private { get; set; }
+    UInt64 PubKeyHash { get; set; }
+    string NetHash { get; set; }
+    UInt64 Wif { get; set; }
+    UInt64 Slip44 { get; set; }
+    UInt64 Aip20 { get; set; }
+    string ClientToken { get; set; }
+    string ClientSymbol { get; set; }
+    string ClientExplorer { get; set; }
+}
+
+public interface IExceptions {
+    List<string> Blocks { get; set; }
+    List<string> Transactions { get; set; }
+    Dictionary<string, string> OutlookTable { get; set; }
+    Dictionary<string, string> TransactionIdFixTable { get; set; }
 }

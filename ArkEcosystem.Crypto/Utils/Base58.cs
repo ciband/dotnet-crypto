@@ -1,7 +1,4 @@
-// Author:
-//       Brian Faust <brian@ark.io>
-//
-// Copyright (c) 2018 Ark Ecosystem <info@ark.io>
+// Copyright (c) 2019 Ark Ecosystem <info@ark.io>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,24 +18,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System.Text;
 using NBitcoin;
-using System.Security.Cryptography;
-using System;
 using NBitcoin.DataEncoders;
+using NBitcoin.Crypto;
+using System.IO;
+using System;
+using System.Linq;
 
-namespace ArkEcosystem.Crypto.Identities
-{
-    public static class PrivateKey
-    {
-        public static string FromPassphrase(string passphrase)
-        {
-            return Keys.FromPassphrase(passphrase).PrivateKey;
-        }
+namespace ArkEcosystem.Crypto {
 
-        public static string FromWIF(string wif, INetwork network)
-        {
-            return Keys.FromWIF(wif, network).PrivateKey;
-        }
+public static class Base58 {
+    public static string EncodeCheck(byte[] buffer) {
+        var checksum = HashAlgorithms.hash256(buffer);
+        var newBuffer = new byte[buffer.Length + 4];
+        Buffer.BlockCopy(buffer, 0, newBuffer, 0, buffer.Length);
+        Buffer.BlockCopy(checksum, 0, newBuffer, buffer.Length, 4);
+        return Encoders.Base58Check.EncodeData(newBuffer);
     }
+
+    public static byte[] DecodeCheck(string address) {
+        var buffer = Encoders.Base58Check.DecodeData(address);
+        var payload = buffer.Take(buffer.Length - 4).ToArray();
+
+        var checksum = HashAlgorithms.hash256(payload);
+
+        var c = BitConverter.ToUInt32(checksum, 0);
+        var b = BitConverter.ToUInt32(buffer, buffer.Length - 4);
+        if (!BitConverter.IsLittleEndian) {
+            // Platform is big endian, byte swap
+        }
+        if (c != b) {
+            throw new Exception("Invalid checksum");
+        }
+
+        return payload;
+    }
+}
+
+
+}
+
 }

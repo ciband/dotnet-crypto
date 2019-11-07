@@ -30,23 +30,21 @@ namespace ArkEcosystem.Crypto.Tests.Transactions.Builder
     public class MultiSignatureRegistrationTest
     {
         [TestMethod]
-        public void Should_Create_Transaction_With_Secret()
+        public void Should_Be_Valid_With_A_Signature()
         {
-            List<string> keysgroup = new List<string>{
-                "03a02b9d5fdd1307c2ee4652ba54d492d1fd11a7d1bb3f3a44c4a05e79f19de933",
-                "13a02b9d5fdd1307c2ee4652ba54d492d1fd11a7d1bb3f3a44c4a05e79f19de933",
-                "23a02b9d5fdd1307c2ee4652ba54d492d1fd11a7d1bb3f3a44c4a05e79f19de933"
+            var publicKeys = new List<string>() {
+                "039180ea4a8a803ee11ecb462bb8f9613fcdb5fe917e292dbcc73409f0e98f8f22",
+                "028d3611c4f32feca3e6713992ae9387e18a0e01954046511878fe078703324dc0",
+                "021d3932ab673230486d0f956d05b9e88791ee298d9af2d6df7d9ed5bb861c92dd"
             };
+            var actual = Crypto.Transactions.Builder.MultiSignatureRegistration.Create(2, publicKeys);
+            actual.SenderPublicKey = "039180ea4a8a803ee11ecb462bb8f9613fcdb5fe917e292dbcc73409f0e98f8f22";
+            actual.MultiSign("secret 1", 0);
+            actual.MultiSign("secret 2", 0);
+            actual.MultiSign("secret 3", 0);
+            actual.Signature = actual.Sign("secret 1");
 
-            var transaction = Crypto.Transactions.Builder.MultiSignatureRegistration.Create(
-                2,
-                255,
-                keysgroup,
-                "This is a top secret passphrase",
-                "this is a top secret second passphrase"
-            );
-
-            Assert.IsTrue(transaction.Verify());
+            Assert.IsTrue(actual.Verify());
         }
     }
 }

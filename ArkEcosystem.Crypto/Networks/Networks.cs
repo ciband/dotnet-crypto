@@ -21,18 +21,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-namespace ArkEcosystem.Crypto.Enums
+using System;
+using System.Collections.Generic;
+
+namespace ArkEcosystem.Crypto
 {
-    public static class TransactionTypes
+    public static class Networks
     {
-        public static readonly byte TRANSFER = 0;
-        public static readonly byte SECOND_SIGNATURE_REGISTRATION = 1;
-        public static readonly byte DELEGATE_REGISTRATION = 2;
-        public static readonly byte VOTE = 3;
-        public static readonly byte MULTI_SIGNATURE_REGISTRATION = 4;
-        public static readonly byte IPFS = 5;
-        public static readonly byte TIMELOCK_TRANSFER = 6;
-        public static readonly byte MULTI_PAYMENT = 7;
-        public static readonly byte DELEGATE_RESIGNATION = 8;
+        public static readonly INetworkConfig Devnet;
+        public static readonly INetworkConfig Mainnet;
+        public static readonly INetworkConfig Testnet;
+        public static readonly INetworkConfig Unitnet;
+
+        public static Dictionary<string, INetworkConfig> All;
+
+        static Networks() {
+            All = new Dictionary<string, INetworkConfig>() {
+                {"devnet", Devnet },
+                {"mainnet", Mainnet },
+                {"testnet", Testnet },
+                {"unitnet", Unitnet }
+            };
+        }
+
+        public static INetworkConfig GetNetwork(string name) {
+            switch(name) {
+                case "devnet": return Devnet;
+                case "mainnet": return Mainnet;
+                case "testnet": return Testnet;
+                case "unitnet": return Unitnet;
+                default: return null;
+            }
+        }
     }
 }
