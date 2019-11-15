@@ -53,5 +53,9 @@ namespace ArkEcosystem.Crypto
                 default: return null;
             }
         }
+
+        public static INetwork GetNetworkFromWif(byte networkWIF) {
+
+        }
     }
 }

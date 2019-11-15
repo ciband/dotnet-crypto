@@ -18,12 +18,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-public interface IDecryptResult {
-    byte[] PrivateKey { get; set; }
-    bool Compressed { get; set; }
-}
+using NBitcoin;
+using NBitcoin.DataEncoders;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using ArkEcosystem.Crypto.Managers;
+using ArkEcosystem.Crypto.Enums;
 
-public class DecryptResult : IDecryptResult {
-    public byte[] PrivateKey { get; set; }
-    public bool Compressed { get; set; }
+namespace ArkEcosystem.Crypto.Transactions
+{
+    public class DelegateResignationTransaction : Transaction
+    {
+        public static UInt16 TYPE_GROUP = TransactionTypeGroup.CORE;
+        public static UInt32 TYPE = TransactionTypes.DELEGATE_RESIGNATION;
+        public static string KEY = "delegateResignation";
+
+        //public static TransactionSchema GetSchema() {
+
+        //}
+
+        protected const UInt64 DefaultStaticFee = 2500000000;
+
+        public override bool Verify() {
+            return ConfigManager.GetMilestone().Value.aip11 && base.Verify();
+        }
+
+        public byte[] Serialize(ISerializeOptions options) {
+            return new byte[1] {0};
+        }
+
+        public void Deserialize(BinaryReader buf) {
+            return;
+        }
+    }
 }

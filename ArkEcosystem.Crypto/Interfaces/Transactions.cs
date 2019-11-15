@@ -48,6 +48,7 @@ public interface ITransaction {
 public interface ITransactionAsset {
     string SignaturePublicKey { get; set; }
     string DelegateUserName { get; set; }
+    string DelegatePublicKey { get; set; }
     List<string> Votes { get; set; }
     IMultiSignatureLegacyAsset MultiSignatureLegacy { get; set; }
     IMultiSignatureAsset MultiSignature { get; set; }
@@ -56,8 +57,22 @@ public interface ITransactionAsset {
     IHtlcLockAsset Lock { get; set; }
     IHtlcClaimAsset Claim { get; set; }
     IHtlcRefundAsset Refund { get; set; }
+    Dictionary<string, dynamic> Custom { get; set; }
+}
 
-    //TODO: From TS: [custom: string]: any;
+class TransactionAsset : ITransactionAsset {
+    public string SignaturePublicKey { get; set; }
+    public string DelegateUserName { get; set; }
+    public string DelegatePublicKey { get; set; }
+    public List<string> Votes { get; set; }
+    public IMultiSignatureLegacyAsset MultiSignatureLegacy { get; set; }
+    public IMultiSignatureAsset MultiSignature { get; set; }
+    public string Ipfs { get; set; }
+    public List<IMultiPaymentItem> Payments { get; set; }
+    public IHtlcLockAsset Lock { get; set; }
+    public IHtlcClaimAsset Claim { get; set; }
+    public IHtlcRefundAsset Refund { get; set; }
+    public Dictionary<string, dynamic> Custom { get; set; }
 }
 
 public interface ITransactionData {
@@ -88,6 +103,36 @@ public interface ITransactionData {
 
     string BlockId { get; set; }
     UInt32 Sequence { get; set; }  //TODO check int size
+}
+
+public class TransactionData : ITransactionData {
+    public byte Version { get; set; }
+    public byte Network { get; set; }
+
+    public UInt32 TypeGroup { get; set; }
+    public UInt16 Type { get; set; }
+
+    public UInt32 Timestamp { get; set; }
+    public UInt64 Nonce { get; set; }
+    public string SenderPublicKey { get; set; }
+
+    public UInt64 Fee { get; set; }
+    public UInt64 Amount { get; set; }
+
+    public UInt32 Expiration { get; set; }
+    public string RecipientId { get; set; }
+
+    public ITransactionAsset Asset { get; set; }
+    public string VendorField { get; set; }
+
+    public string Id { get; set; }
+    public string Signature { get; set; }
+    public string SecondSignature { get; set; }
+    public string signSignature { get; set; }
+    public List<string> Signatures { get; set; }
+
+    public string BlockId { get; set; }
+    public UInt32 Sequence { get; set; }  //TODO check int size
 }
 
 public interface ITransactionJson {
@@ -122,10 +167,20 @@ public interface ITransactionJson {
     string IpfsHash {get; set; }
 }
 
-public interface ISchemaValidationResult<T> {
-    T Value { get; set; }
+public interface ISchemaValidationResult {
+    dynamic Value { get; set; }
     dynamic Error { get; set; }
     List<ErrorObject> Errors { get; set; }
+}
+
+public interface IMultiPaymentItem {
+    UInt64 Amount { get; set; }
+    string RecipientId { get; set; }
+}
+
+public class MultiPaymentItem : IMultiPaymentItem {
+    public UInt64 Amount { get; set; }
+    public string RecipientId { get; set; }
 }
 
 public interface IMultiSignatureLegacyAsset {
@@ -137,6 +192,11 @@ public interface IMultiSignatureLegacyAsset {
 public interface IMultiSignatureAsset {
     byte Min { get; set; }
     List<string> PublicKeys { get; set; }
+}
+
+public class MultiSignatureAsset : IMultiSignatureAsset {
+    public byte Min { get; set; }
+    public List<string> PublicKeys { get; set; }
 }
 
 public interface IHtlcLockAsset {
@@ -172,10 +232,22 @@ public interface IDeserializeOptions {
     bool AcceptLegacyVersion { get; set; }
 }
 
+public class DeserializeOptions : IDeserializeOptions{
+    public bool AcceptLegacyVersion { get; set; }
+}
+
 public interface ISerializeOptions {
     bool AcceptLegacyVersion { get; set; }
     bool ExcludeSignature { get; set; }
     bool ExcludeSecondSignature { get; set; }
     bool ExcludeMultiSignature { get; set; }
     string AddressError { get; set; }
+}
+
+public class SerializeOptions : ISerializeOptions {
+    public bool AcceptLegacyVersion { get; set; }
+    public bool ExcludeSignature { get; set; }
+    public bool ExcludeSecondSignature { get; set; }
+    public bool ExcludeMultiSignature { get; set; }
+    public string AddressError { get; set; }
 }

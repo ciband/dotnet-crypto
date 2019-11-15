@@ -18,39 +18,49 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
+using ArkEcosystem.Crypto.Enums;
+using ArkEcosystem.Crypto.Managers;
+using ArkEcosystem.Crypto.Transactions;
 using NBitcoin;
 using NBitcoin.Crypto;
 using NBitcoin.DataEncoders;
 
 namespace ArkEcosystem.Crypto {
 
-public static class HashAlgorithms {
-    public static byte[] Ripemd160(byte[] buffer) {
-        return Hashes.RIPEMD160(buffer, buffer.Length);
+public class SecondSignatureBuilder : TransactionBuilder<SecondSignatureBuilder> {
+
+    public SecondSignatureBuilder() : base() {
+        Data.Type = TransactionTypes.SECOND_SIGNATURE;
+        Data.Fee = FeeManager.Get(TransactionTypes.SECOND_SIGNATURE);
+        Data.Amount = 0;
+        Data.RecipientId = null;
+        Data.SenderPublicKey = null;
+        Data.Asset = new TransactionAsset {
+            SignaturePublicKey = null
+        };
     }
 
-    public static byte[] Sha1(byte[] buffer) {
-        return Hashes.SHA256(buffer);
+    public SecondSignatureBuilder SignatureAsset(string secondPassphrase) {
+        Data.Asset.SignaturePublicKey = Keys.FromPassphrase(secondPassphrase).PublicKey;
+        return this;
     }
 
-    public static byte[] Sha256(byte[] buffer) {
-        return Hashes.SHA256(buffer);
+    public override ITransactionData GetStruct() {
+        var struct = base.GetStruct();
+
+        struct.Amount = Data.Amount;
+        struct.RecipientId = Data.RecipientId;
+        struct.Asset = Data.Asset;
+
+        return struct;
     }
 
-    public static byte[] Sha256(string buffer) {
-        return Hashes.SHA256(Encoders.Hex.DecodeData(buffer));
-    }
-
-    public static byte[] Hash160(byte[] buffer) {
-        return Hashes.Hash160(buffer).ToBytes();
-    }
-
-    public static byte[] Hash256(byte[] buffer) {
-        return Hashes.Hash256(buffer).ToBytes();
-    }
-
-    public static byte[] Hash256(string buffer) {
-        return Hashes.Hash256(Encoders.Hex.DecodeData(buffer)).ToBytes();
+    protected override SecondSignatureBuilder Instance() {
+        return this;
     }
 }
 

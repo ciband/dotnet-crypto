@@ -18,12 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-public interface IDecryptResult {
-    byte[] PrivateKey { get; set; }
-    bool Compressed { get; set; }
+using System;
+using System.Collections.Generic;
+using ArkEcosystem.Crypto.Enums;
+
+namespace ArkEcosystem.Crypto.Transactions
+{
+
+public class InternalTransactionType {
+    public UInt32 Type { get; set; }
+    public UInt32 TypeGroup { get; set; }
+
+    public static InternalTransactionType From(UInt32 type, UInt32? typeGroup) {
+        if (typeGroup == null) {
+            typeGroup = TransactionTypeGroup.CORE;
+        }
+
+        var compositType = $"{typeGroup}-{type}";
+        if (!Types.ContainsKey(compositType)) {
+            Types[compositType] = new InternalTransactionType(type, typeGroup.Value);
+        }
+
+        return Types[compositType];
+    }
+
+    private static Dictionary<string, InternalTransactionType> Types = new Dictionary<string, InternalTransactionType>();
+
+    private InternalTransactionType(UInt32 type, UInt32 typeGroup) {
+        Type = type;
+        TypeGroup = typeGroup;
+    }
+
+    public override string ToString() {
+        if (TypeGroup == TransactionTypeGroup.CORE) {
+            return $"Core/{Type}";
+        }
+        return $"{TypeGroup}/{Type}";
+    }
 }
 
-public class DecryptResult : IDecryptResult {
-    public byte[] PrivateKey { get; set; }
-    public bool Compressed { get; set; }
 }

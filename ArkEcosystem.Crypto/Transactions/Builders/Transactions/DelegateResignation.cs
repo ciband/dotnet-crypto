@@ -18,12 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-public interface IDecryptResult {
-    byte[] PrivateKey { get; set; }
-    bool Compressed { get; set; }
+using System;
+using System.Linq;
+using System.Security.Cryptography;
+using ArkEcosystem.Crypto.Enums;
+using ArkEcosystem.Crypto.Managers;
+using ArkEcosystem.Crypto.Transactions;
+using NBitcoin;
+using NBitcoin.Crypto;
+using NBitcoin.DataEncoders;
+
+namespace ArkEcosystem.Crypto {
+
+public class DelegateResignationBuilder : TransactionBuilder<DelegateResignationBuilder> {
+
+    public DelegateResignationBuilder() : base() {
+        Data.Type = TransactionTypes.DELEGATE_RESIGNATION;
+        Data.Version = 2;
+        Data.Fee = FeeManager.Get(TransactionTypes.DELEGATE_RESIGNATION);
+        Data.Amount = 0;
+        Data.SenderPublicKey = null;
+    }
+
+    public override ITransactionData GetStruct() {
+        var struct = base.GetStruct();
+
+        struct.Amount = Data.Amount;
+        return struct;
+    }
+
+    protected override DelegateResignationBuilder Instance() {
+        return this;
+    }
 }
 
-public class DecryptResult : IDecryptResult {
-    public byte[] PrivateKey { get; set; }
-    public bool Compressed { get; set; }
 }

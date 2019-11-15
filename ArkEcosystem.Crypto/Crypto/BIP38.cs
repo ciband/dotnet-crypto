@@ -27,11 +27,6 @@ using NBitcoin.DataEncoders;
 
 namespace ArkEcosystem.Crypto {
 
-public class DecryptResult : IDecryptResult {
-    public byte[] PrivateKey { get; set; }
-    public bool Compressed { get; set; }
-}
-
 public static class BIP38 {
     private static byte[] getPublicKey(byte[] buffer, bool compressed) {
         return Encoders.Hex.DecodeData(Keys.FromPrivateKey(buffer, compressed).PublicKey);
@@ -229,7 +224,41 @@ public static class BIP38 {
         if (!compressed && flagByte != 0xc0) {
             throw new Bip38CompressionError(0xc0, flagByte);
         }
-        
+
+        var salt = buffer.Skip(3).Take(4).ToArray();
+        var scryptBuf = SCrypt.ComputeDerivedKey(Encoders.Hex.DecodeData(passphrase), salt, 16384, 8, 8, 1, 32);
+        var derivedHalf1 = scryptBuf.Take(32).ToArray();
+        var derivedHalf2 = scryptBuf.Skip(32).Take(32).ToArray();
+
+        var privKeyBuf = buffer.Skip(7).Take(32).ToArray();
+        var aes = new AesManaged() {
+            Mode = CipherMode.ECB,
+            Key = derivedHalf2,
+            Padding = PaddingMode.None
+        };
+
+        var decipher = aes.CreateDecryptor();
+        var plainText = decipher.TransformFinalBlock(privKeyBuf, 0, privKeyBuf.Length);
+
+        var privateKey = new byte[derivedHalf1.Length];
+        for (var i = 0; i < plainText.Length; ++i) {
+            privateKey[i] = (byte)(derivedHalf1[i] ^ plainText[i]);
+        }
+
+        var address = getAddressPrivate(privateKey, compressed);
+
+        var checksum = HashAlgorithms.Hash256(address).Take(4);
+        //assert(salt === checksum)
+
+        return new DecryptResult { PrivateKey = privateKey, Compressed = compressed };
+    }
+
+    public static string Encrypt(byte[] privateKey, bool compressed, string passphrase) {
+        return Base58.EncodeCheck(encryptRaw(privateKey, compressed, passphrase));
+    }
+
+    public static IDecryptResult Decrypt(string bip38, string passphrase) {
+        return decryptRaw(Base58.DecodeCheck(bip38), passphrase);
     }
 }
 

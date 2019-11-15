@@ -18,12 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-public interface IDecryptResult {
-    byte[] PrivateKey { get; set; }
-    bool Compressed { get; set; }
+using System;
+using System.Linq;
+using System.Security.Cryptography;
+using ArkEcosystem.Crypto.Transactions;
+using NBitcoin;
+using NBitcoin.Crypto;
+using NBitcoin.DataEncoders;
+
+namespace ArkEcosystem.Crypto {
+
+public static class TransactionRegistry {
+
 }
 
-public class DecryptResult : IDecryptResult {
-    public byte[] PrivateKey { get; set; }
-    public bool Compressed { get; set; }
 }

@@ -27,59 +27,53 @@ using NBitcoin;
 using System.Collections.Generic;
 using System.Text;
 using Newtonsoft.Json.Linq;
+using ArkEcosystem.Crypto.Managers;
 
 namespace ArkEcosystem.Crypto
 {
-    public class Message
+    internal class MessageImpl : IMessage {
+        public string PublicKey { get; set; }
+        public string Signature { get; set; }
+        public string Message { get; set; }
+
+        internal MessageImpl() { }
+    }
+    public static class Message
     {
-        static readonly System.Security.Cryptography.SHA256 Sha256 = System.Security.Cryptography.SHA256.Create();
-        public readonly string publicKey;
-        public readonly string signature;
-        public readonly string message;
+        public static IMessage Sign(string message, string passphrase) {
+            var keys = Keys.FromPassphrase(passphrase);
 
-        public Message(string publicKey, string signature, string message)
-        {
-            this.publicKey = publicKey;
-            this.signature = signature;
-            this.message = message;
-        }
-
-        public static Message Sign(string message, string passphrase)
-        {
-            var privateKeyBytes = Sha256.ComputeHash(Encoding.ASCII.GetBytes(passphrase));
-            var privateKey = new Key(privateKeyBytes);
-
-            var messageBytes = Sha256.ComputeHash(Encoding.ASCII.GetBytes(message));
-            var signature = privateKey.Sign(new uint256(messageBytes));
-
-            return new Message(
-                privateKey.PubKey.ToString(),
-                Encoders.Hex.EncodeData(signature.ToDER()),
-                message
-            );
-        }
-
-        public bool Verify()
-        {
-            var messageBytes = Sha256.ComputeHash(Encoding.ASCII.GetBytes(message));
-            var messageSignature = ECDSASignature.FromDER(Encoders.Hex.DecodeData(signature));
-
-            return new PubKey(publicKey).Verify(new uint256(messageBytes), messageSignature);
-        }
-
-        public Dictionary<string, string> ToDictionary()
-        {
-            return new Dictionary<string, string>
-            {
-                { "publickey", publicKey },
-                { "signature", signature },
-                { "message", message }
+            return new MessageImpl {
+                PublicKey = keys.PublicKey,
+                Signature = Hash.SignECDSA(createHash(message), keys),
+                Message = message
             };
         }
 
-        public string ToJson()
-        {
-            return JObject.FromObject(ToDictionary()).ToString();
+        public static IMessage SignWithWif(string message, string wif, INetwork network) {
+            if (network == null) {
+                network = ConfigManager.Get<INetwork>("network");
+            }
+
+            var keys = Keys.FromWIF(wif, network);
+
+            return new MessageImpl {
+                PublicKey = keys.PublicKey,
+                Signature = Hash.SignECDSA(createHash(message), keys),
+                Message = message
+            };
+        }
+
+        public static bool Verify(IMessage message) {
+            return Hash.VerifyECDSA(
+                createHash(message.Message),
+                Encoders.Hex.DecodeData(message.Signature),
+                Encoders.Hex.DecodeData(message.PublicKey)
+            );
+        }
+
+        private static byte[] createHash(string message) {
+            return HashAlgorithms.Sha256(message);
         }
     }
 }

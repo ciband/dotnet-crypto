@@ -18,12 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-public interface IDecryptResult {
-    byte[] PrivateKey { get; set; }
-    bool Compressed { get; set; }
+using NBitcoin;
+using NBitcoin.DataEncoders;
+using NBitcoin.Crypto;
+using System.IO;
+using System;
+using System.Linq;
+
+namespace ArkEcosystem.Crypto {
+
+public static class Formats {
+    public static bool VendorField(string data) {
+        return false;
+    }
+
+    public static bool ValidPeer(string ip) {
+        return false;
+    }
 }
 
-public class DecryptResult : IDecryptResult {
-    public byte[] PrivateKey { get; set; }
-    public bool Compressed { get; set; }
+
 }

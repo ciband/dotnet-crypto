@@ -26,7 +26,7 @@ using ArkEcosystem.Crypto.Managers;
 
 namespace ArkEcosystem.Crypto
 {
-    public static class Slot
+    public static class Slots
     {
         public static UInt32 GetTime()
         {

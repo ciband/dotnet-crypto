@@ -59,7 +59,7 @@ public class NetworkVersionError : CryptoError {
 }
 
 public class NotImplementedError : CryptoError {
-    public NotImplementedError(string expected, string given) :
+    public NotImplementedError() :
         base("Feature is not available.") {}
 }
 
@@ -93,6 +93,7 @@ public class TransactionSchemaError : CryptoError {
 }
 
 public class TransactionVersionError : CryptoError {
+    public TransactionVersionError(byte given) : this(given.ToString()) { }
     public TransactionVersionError(string given) :
         base($"Version {given} not supported.") {}
 }
@@ -123,7 +124,7 @@ public class MissingMilestoneFeeError : CryptoError {
 }
 
 public class MaximumPaymentCountExceededError : CryptoError {
-    public MaximumPaymentCountExceededError(UInt64 limit) :
+    public MaximumPaymentCountExceededError(int limit) :
         base($"Number of payments exceeded the allowed maximum of {limit}.") {}
 }
 

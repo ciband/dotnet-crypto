@@ -18,12 +18,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-public interface IDecryptResult {
-    byte[] PrivateKey { get; set; }
-    bool Compressed { get; set; }
+using System;
+using System.Linq;
+using System.Security.Cryptography;
+using ArkEcosystem.Crypto.Enums;
+using ArkEcosystem.Crypto.Managers;
+using ArkEcosystem.Crypto.Transactions;
+using NBitcoin;
+using NBitcoin.Crypto;
+using NBitcoin.DataEncoders;
+
+namespace ArkEcosystem.Crypto {
+
+public class IPFSBuilder : TransactionBuilder<IPFSBuilder> {
+
+    public IPFSBuilder() : base() {
+        Data.Type = TransactionTypes.IPFS;
+        Data.Fee = FeeManager.Get(TransactionTypes.IPFS);
+        Data.Amount = 0;
+        Data.Asset = null;
+    }
+
+    public IPFSBuilder IpfsAsset(string ipfsId) {
+        Data.Asset = new TransactionAsset {
+            Ipfs = ipfsId
+        };
+        return this;
+    }
+
+    public override ITransactionData GetStruct() {
+        var struct = base.GetStruct();
+
+        struct.Amount = Data.Amount;
+        struct.Asset = Data.Asset;
+        return struct;
+    }
+
+    protected override IPFSBuilder Instance() {
+        return this;
+    }
 }
 
-public class DecryptResult : IDecryptResult {
-    public byte[] PrivateKey { get; set; }
-    public bool Compressed { get; set; }
 }

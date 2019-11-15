@@ -18,12 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-public interface IDecryptResult {
-    byte[] PrivateKey { get; set; }
-    bool Compressed { get; set; }
+using System;
+using System.Collections.Generic;
+
+namespace ArkEcosystem.Crypto.Transactions
+{
+
+public static class TransactionTypeFactory {
+    public static Initialize(Dictionary<InternalTransationType, TransactionConstructor> transactionTypes) {
+        TransactionTypes = transactionTypes;
+    }
+
+    public static ITransaction Create(ITransactionData data) {
+        ITransaction instance = null;
+
+    }
+
+    public static TransactionConstructor Get(UInt32 type, UInt32? typeGroup) {
+        var internalType = InternalTransactionType.From(type, typeGroup);
+        if (TransactionTypes.ContainsKey(internalType)) {
+            return TransactionTypes[internalType];
+        }
+
+        throw new UnkownTransactionError(internalType.ToString());
+    }
+
+    private static Dictionary<InternalTransationType, TransactionConstructor> TransactionTypes;
 }
 
-public class DecryptResult : IDecryptResult {
-    public byte[] PrivateKey { get; set; }
-    public bool Compressed { get; set; }
 }

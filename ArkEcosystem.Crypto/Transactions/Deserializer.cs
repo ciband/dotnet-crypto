@@ -22,135 +22,195 @@
 // THE SOFTWARE.
 
 using NBitcoin.DataEncoders;
+using System.Linq;
 using System.Text;
 using System.IO;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using ArkEcosystem.Crypto.Enums;
+using ArkEcosystem.Crypto.Identities;
 
 namespace ArkEcosystem.Crypto.Transactions
 {
-    public class Deserializer
-    {
-        string serialized;
-        MemoryStream stream;
-        BinaryReader reader;
-        int assetOffset;
+    public static class Deserializer {
+        public static ITransaction Deserialize(string serialized, IDeserializeOptions options) {
+            return Deserialize(Encoders.Hex.DecodeData(serialized), options);
+        }
+        public static ITransaction Deserialize(byte[] serialized, IDeserializeOptions options) {
+            ITransactionData data = new TransactionData();
 
-        public Deserializer(string serialized)
-        {
-            this.serialized = serialized;
-            stream = new MemoryStream(Encoders.Hex.DecodeData(serialized));
-            reader = new BinaryReader(stream);
+            var buffer = new BinaryReader(new MemoryStream(serialized));
+            deserializeCommon(data, buffer);
+
+            var instance = TransactionTypeFactory.Create(data);
+            deserializeVendorField(instance, buffer);
+
+            // Deserialize type specific parts
+            instance.Deserialize(buffer);
+
+            deserializeSignatures(data, buffer);
+
+            if (options.AcceptLegacyVersion || Utils.IsSupportedTransactionVersion(data.Version)) {
+                if (data.Version == 1) {
+                    applyV1Compatibility(data);
+                }
+            } else {
+                throw new TransactionVersionError(data.Version);
+            }
+
+            instance.serialized = buffer;
+
+            return instance;
         }
 
-        public Transaction Deserialize()
-        {
-            var transaction = new Transaction();
-            transaction = HandleHeader(transaction);
-            transaction = HandleType(transaction);
+        private static void deserializeCommon(ITransactionData transaction, BinaryReader buf) {
+            buf.ReadByte();
+            transaction.Version = buf.ReadByte();
+            transaction.Network = buf.ReadByte();
 
-            if (transaction.Version == 1)
-            {
-                transaction = HandleVersionOne(transaction);
+            if (transaction.Version == 1) {
+                transaction.Type = buf.ReadByte();;
+                transaction.Timestamp = buf.ReadUInt32();
+            } else {
+                transaction.TypeGroup = buf.ReadUInt32();
+                transaction.Type = buf.ReadUInt16();
+                transaction.Nonce = buf.ReadUInt64();
             }
 
-            return transaction;
+            transaction.SenderPublicKey = Encoders.Hex.EncodeData(buf.ReadBytes(33));
+            transaction.Fee = buf.ReadUInt64();
+            transaction.Amount = 0;
         }
 
-        public Transaction HandleHeader(Transaction transaction)
-        {
-            transaction.Header = reader.ReadByte();
-            transaction.Version = reader.ReadByte();
-            transaction.Network = reader.ReadByte();
-            transaction.Type = reader.ReadByte();
-            transaction.Timestamp = reader.ReadUInt32();
-            transaction.SenderPublicKey = Encoders.Hex.EncodeData(reader.ReadBytes(33));
-            transaction.Fee = reader.ReadUInt64();
-
-            var vendorFieldLength = reader.ReadByte();
-
-            if (vendorFieldLength > 0)
-            {
-                transaction.VendorFieldHex = serialized.Substring((41 + 8 + 1) * 2, vendorFieldLength * 2);
-            }
-
-            assetOffset = (41 + 8 + 1) * 2 + vendorFieldLength * 2;
-
-            return transaction;
-        }
-
-        Transaction HandleType(Transaction transaction)
-        {
-            switch (transaction.Type)
-            {
-                case 0:
-                    transaction = Deserializers.Transfer.Deserialize(reader, stream, transaction, serialized, assetOffset);
-                    break;
-                case 1:
-                    transaction = Deserializers.SecondSignatureRegistration.Deserialize(reader, stream, transaction, serialized, assetOffset);
-                    break;
-                case 2:
-                    transaction = Deserializers.DelegateRegistration.Deserialize(reader, stream, transaction, serialized, assetOffset);
-                    break;
-                case 3:
-                    transaction = Deserializers.Vote.Deserialize(reader, stream, transaction, serialized, assetOffset);
-                    break;
-                case 4:
-                    transaction = Deserializers.MultiSignatureRegistration.Deserialize(reader, stream, transaction, serialized, assetOffset);
-                    break;
-                case 5:
-                    transaction = Deserializers.IPFS.Deserialize(reader, stream, transaction, serialized, assetOffset);
-                    break;
-                case 6:
-                    transaction = Deserializers.TimelockTransfer.Deserialize(reader, stream, transaction, serialized, assetOffset);
-                    break;
-                case 7:
-                    transaction = Deserializers.MultiPayment.Deserialize(reader, stream, transaction, serialized, assetOffset);
-                    break;
-                case 8:
-                    transaction = Deserializers.DelegateResignation.Deserialize(reader, stream, transaction, serialized, assetOffset);
-                    break;
-            }
-
-            return transaction;
-        }
-
-        Transaction HandleVersionOne(Transaction transaction)
-        {
-            if (transaction.SecondSignature != "")
-            {
-                transaction.SignSignature = transaction.SecondSignature;
-            }
-
-            if (transaction.Type == 3)
-            {
-                var publicKey = Identities.PublicKey.FromHex(transaction.SenderPublicKey);
-                transaction.RecipientId = Identities.Address.FromPublicKey(publicKey, transaction.Network);
-            }
-
-            if (transaction.Type == 4)
-            {
-                for (int i = 0; i < transaction.Asset["multisignature"]["keysgroup"].Count; i++)
-                {
-                    transaction.Asset["multisignature"]["keysgroup"][i] = "+" + transaction.Asset["multisignature"]["keysgroup"][i];
+        private static void deserializeVendorField(ITransaction transaction, BinaryReader buf) {
+            var vendorFieldLength = buf.ReadByte();
+            if (vendorFieldLength > 0) {
+                if (transaction.HasVendorField()) {
+                    var vendorFieldLengthBuffer = buf.ReadBytes(vendorFieldLength);
+                    transaction.Data.VendorField = Encoders.Hex.EncodeData(vendorFieldLengthBuffer);
+                } else {
+                    buf.ReadBytes(vendorFieldLength);
                 }
             }
+        }
 
-            if (transaction.VendorFieldHex != null)
-            {
-                transaction.VendorField = Encoding.UTF8.GetString(Encoders.Hex.DecodeData(transaction.VendorFieldHex));
+        private static void deserializeSignatures(ITransactionData transaction, BinaryReader buf) {
+            if (transaction.Version == 1) {
+                deserializeECDSA(transaction, buf);
+            } else {
+                deserializeSchnorrOrECDSA(transaction, buf);
+            }
+        }
+
+        private static void deserializeSchnorrOrECDSA(ITransactionData transaction, BinaryReader buf) {
+            if (detectSchnorr(buf)) {
+                deserializeSchnorr(transaction, buf);
+            } else {
+                deserializeECDSA(transaction, buf);
+            }
+        }
+
+        private static void deserializeECDSA(ITransactionData transaction, BinaryReader buf) {
+            Func<int> currentSignatureLength = () => {
+                var reset = buf.BaseStream.Position;
+
+                buf.ReadByte();
+                var lengthHex = buf.ReadByte();
+
+                buf.BaseStream.Seek(reset, SeekOrigin.Begin);
+                return lengthHex + 2;
+            };
+
+            Func<bool> beginningMultiSignature = () => {
+                var reset = buf.BaseStream.Position;
+
+                var marker = buf.ReadByte();
+
+                buf.BaseStream.Seek(reset, SeekOrigin.Begin);
+
+                return marker == 255;
+            };
+
+            // second signature
+            if (buf.BaseStream.CanRead && !beginningMultiSignature()) {
+                buf.ReadByte();
+                var multiSignature = Encoders.Hex.EncodeData(buf.ReadBytes((int)(buf.BaseStream.Length - buf.BaseStream.Position)));
+                transaction.Signatures.Add(multiSignature);
             }
 
-            if (transaction.Id == null)
-            {
-                transaction.Id = transaction.GetId();
+            if (buf.BaseStream.CanRead) {
+                throw new InvalidTransactionBytesError("signature buffer not exhausted");
+            }
+        }
+
+        private static void deserializeSchnorr(ITransactionData transaction, BinaryReader buf) {
+            Func<bool> canReadNonMultiSignature = () => {
+                var remaining = buf.BaseStream.Length - buf.BaseStream.Position;
+                return remaining > 0 && ((remaining % 64) == 0 || (remaining % 65) != 0);
+            };
+
+            if (canReadNonMultiSignature()) {
+                transaction.Signature = Encoders.Hex.EncodeData(buf.ReadBytes(64));
             }
 
-            if (transaction.Type == 1 || transaction.Type == 4)
-            {
-                var publicKey = Identities.PublicKey.FromHex(transaction.SenderPublicKey);
-                transaction.RecipientId = Identities.Address.FromPublicKey(publicKey, transaction.Network);
+            var remaining = buf.BaseStream.Length - buf.BaseStream.Position;
+            if (remaining > 0) {
+                if ((remaining %65) == 0) {
+                    transaction.Signatures.Clear();
+
+                    var count = remaining / 65;
+                    var publicKeyIndexes = new Dictionary<UInt32, bool>();
+                    for (var i = 0; i < count; ++i) {
+                        var multiSignaturePart = Encoders.Hex.EncodeData(buf.ReadBytes(65));
+                        var publicKeyIndex = UInt32.Parse(multiSignaturePart.Substring(0, 2), NumberStyles.HexNumber);
+
+                        if(!publicKeyIndexes[publicKeyIndex]) {
+                            publicKeyIndexes[publicKeyIndex] = true;
+                        } else {
+                            throw new DuplicateParticipantInMultiSignatureError();
+                        }
+
+                        transaction.Signatures.Add(multiSignaturePart);
+                    }
+                } else {
+                    throw new InvalidTransactionBytesError("signature buffer not exhausted");
+                }
+            }
+        }
+
+        private static bool detectSchnorr(BinaryReader buf) {
+            var remaining = buf.BaseStream.Length - buf.BaseStream.Position;
+
+            // signature / secondSignature
+            if ( remaining == 64 || remaining == 128) {
+                return true;
             }
 
-            return transaction;
+            // signatures of a multi signature transaction (type != 4)
+            if ((remaining % 65) == 0) {
+                return true;
+            }
+
+            // only possibility left is a type 4 transaction with and without a 'secondSignature'.
+            if ((((remaining - 64) % 65) == 0) || (((remaining - 128) % 65) == 0)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static void applyV1Compatibility(ITransactionData transaction) {
+            transaction.SecondSignature = !string.IsNullOrEmpty(transaction.SecondSignature) ? transaction.SecondSignature : transaction.signSignature;
+            transaction.TypeGroup = TransactionTypeGroup.CORE;
+
+            if (transaction.Type == TransactionTypes.VOTE) {
+                transaction.RecipientId = Address.FromPublicKey(transaction.SenderPublicKey, transaction.Network);
+            } else if (transaction.Type == TransactionTypes.MULTI_SIGNATURE) {
+                transaction.Asset.MultiSignatureLegacy.Keysgroup = transaction.Asset.MultiSignatureLegacy.Keysgroup.Select(k => {
+                    return k.StartsWith("+") ? k : $"+{k}";
+                }).ToList();
+            }
         }
     }
 }
