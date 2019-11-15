@@ -27,21 +27,28 @@ public class CryptoError : Exception {
 }
 
 public class Bip38CompressionError : CryptoError {
+    public Bip38CompressionError(byte expected, byte given) : this(expected.ToString(), given.ToString()) { }
     public Bip38CompressionError(string expected, string given) :
         base($"Expected flag to be {expected}, but got {given}.") {}
 }
 
 public class Bip38LengthError : CryptoError {
+
+    public Bip38LengthError(int expected, int given) : this(expected.ToString(), given.ToString()) {}
     public Bip38LengthError(string expected, string given) :
         base($"Expected length to be {expected}, but got {given}.") {}
 }
 
 public class Bip38PrefixError : CryptoError {
+
+    public Bip38PrefixError(byte expected, byte given) : this(expected.ToString(), given.ToString()) { }
     public Bip38PrefixError(string expected, string given) :
         base($"Expected prefix to be {expected}, but got {given}.") {}
 }
 
 public class Bip38TypeError : CryptoError {
+
+    public Bip38TypeError(byte expected, byte given) : this(expected.ToString(), given.ToString()) { }
     public Bip38TypeError(string expected, string given) :
         base($"Expected type to be {expected}, but got {given}.") {}
 }
@@ -57,6 +64,8 @@ public class NotImplementedError : CryptoError {
 }
 
 public class PrivateKeyLengthError : CryptoError {
+
+    public PrivateKeyLengthError(int expected, int given) : this(expected.ToString(), given.ToString()) { }
     public PrivateKeyLengthError(string expected, string given) :
         base($"Expected length to be {expected}, but got {given}.") {}
 }
